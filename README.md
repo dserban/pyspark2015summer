@@ -11,3 +11,5 @@
 [Titanic Survival Data Set](http://lib.stat.cmu.edu/S/Harrell/data/ascii/titanic.txt)
 
 [Sentiment-Labeled Sentences](http://archive.ics.uci.edu/ml/machine-learning-databases/00331/)
+
+[MovieLens - Build a Recommender System](https://github.com/Blosc/movielens-bench/tree/master/ml-10m)
