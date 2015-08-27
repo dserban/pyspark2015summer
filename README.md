@@ -13,3 +13,5 @@
 [Sentiment-Labeled Sentences](http://archive.ics.uci.edu/ml/machine-learning-databases/00331/)
 
 [MovieLens - Build a Recommender System](https://github.com/Blosc/movielens-bench/tree/master/ml-10m)
+
+[Twitter Stream](https://drive.google.com/file/d/0Bylu3dRYpIlXLWRSSDA4R2VBUGc/view?usp=sharing)
