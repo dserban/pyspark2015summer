@@ -6,6 +6,8 @@
 
 [Worldwide Life Expectancies, Populations, Incomes](https://drive.google.com/file/d/0Bylu3dRYpIlXS0xQaENzUEg5dnc/view?usp=sharing)
 
+[The Complete Works of Shakespeare - Compute Word Count](https://drive.google.com/file/d/0Bylu3dRYpIlXZXVRcjlQN2gzeHM/view?usp=sharing)
+
 [Million Song Subset](http://labrosa.ee.columbia.edu/millionsong/pages/getting-dataset#subset)
 
 [AudioScrobbler](http://www-etud.iro.umontreal.ca/~bergstrj/audioscrobbler_data.html)
