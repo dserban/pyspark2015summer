@@ -14,4 +14,4 @@
 
 [MovieLens - Build a Recommender System](https://github.com/Blosc/movielens-bench/tree/master/ml-10m)
 
-[Twitter Stream](https://drive.google.com/file/d/0Bylu3dRYpIlXLWRSSDA4R2VBUGc/view?usp=sharing)
+[Twitter Stream - Detect Sentiment](https://drive.google.com/file/d/0Bylu3dRYpIlXLWRSSDA4R2VBUGc/view?usp=sharing)
