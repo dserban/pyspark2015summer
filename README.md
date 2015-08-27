@@ -12,6 +12,8 @@
 
 [Titanic Survival Data Set](http://lib.stat.cmu.edu/S/Harrell/data/ascii/titanic.txt)
 
+[Detect Regional and Global Peak Oil Events](https://gist.github.com/dserban/fa1c41affb4fee0d24ea)
+
 [Sentiment-Labeled Sentences](http://archive.ics.uci.edu/ml/machine-learning-databases/00331/)
 
 [MovieLens - Build a Recommender System](https://github.com/Blosc/movielens-bench/tree/master/ml-10m)
