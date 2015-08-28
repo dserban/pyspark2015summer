@@ -22,5 +22,5 @@
 
 [Twitter Stream - Detect Sentiment](https://drive.google.com/file/d/0Bylu3dRYpIlXLWRSSDA4R2VBUGc/view?usp=sharing)
 
-*Electrocardiograms:*  
+**Electrocardiograms:**  
 [What the data looks like](http://dserban.github.io/physiobank/chart.html) - [Where to get the data](http://www.physionet.org/physiobank/database/mitdb/100.dat)
