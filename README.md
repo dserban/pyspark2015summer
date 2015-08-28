@@ -26,3 +26,5 @@
 
 **Electrocardiograms:**  
 [What the data looks like](http://dserban.github.io/physiobank/chart.html) - [Where to get the data](http://www.physionet.org/physiobank/database/mitdb/100.dat)
+
+[Extract data from the NationStates API and run analytics on it](https://www.nationstates.net/pages/api.html)
