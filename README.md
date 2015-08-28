@@ -8,6 +8,8 @@
 
 [The Complete Works of Shakespeare - Compute Word Count](https://drive.google.com/file/d/0Bylu3dRYpIlXZXVRcjlQN2gzeHM/view?usp=sharing)
 
+[The Brown Corpus (NLTK) - Genre Classification with Cosine Similarity](https://github.com/dserban/pyspark2015summer/blob/master/brown.md)
+
 [Million Song Subset](http://labrosa.ee.columbia.edu/millionsong/pages/getting-dataset#subset)
 
 [AudioScrobbler](http://www-etud.iro.umontreal.ca/~bergstrj/audioscrobbler_data.html)
