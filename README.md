@@ -30,3 +30,7 @@
 [What the data looks like](http://dserban.github.io/physiobank/chart.html) - [Where to get the data](http://www.physionet.org/physiobank/database/mitdb/100.dat)
 
 [Extract data from the NationStates API and run analytics on it](https://www.nationstates.net/pages/api.html)
+
+### Miscellaneous
+
+[Data Partitioning Explained](https://www.safaribooksonline.com/library/view/learning-spark/9781449359034/ch04.html)
