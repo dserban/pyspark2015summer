@@ -31,6 +31,46 @@
 
 [Extract data from the NationStates API and run analytics on it](https://www.nationstates.net/pages/api.html)
 
-### Miscellaneous
+### Data Locality
 
 [Data Partitioning Explained](https://www.safaribooksonline.com/library/view/learning-spark/9781449359034/ch04.html)
+
+**Bad Data Locality:**
+```
+ (1,'a')   (1,'m')
+ (1,'b')   (2,'n')
+_________ _________
+
+ (1,'c')   (3,'o')
+ (2,'d')   (3,'p')
+_________ _________
+
+ (2,'e')   (3,'q')
+ (2,'f')   (4,'r')
+_________ _________
+
+ (3,'g')   (4,'s')
+ (4,'h')   (4,'t')
+```
+
+**Good Data Locality:**
+```
+ (1,'a')   (1,'m')
+ (1,'b')
+ (1,'c')
+_________ _________
+
+ (2,'d')   (2,'n')
+ (2,'e')
+ (2,'f')
+_________ _________
+
+ (3,'g')   (3,'o')
+           (3,'p')
+           (3,'q')
+_________ _________
+
+ (4,'h')   (4,'r')
+           (4,'s')
+           (4,'t')
+```
