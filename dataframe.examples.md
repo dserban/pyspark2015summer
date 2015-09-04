@@ -12,7 +12,7 @@ DataFrame[_id: string, address: string, age: bigint, balance: double, company: s
 df.agg( {"balance": "max"} ).show()
 df.agg( {"balance": "min"} ).show()
 ```
-### Detect Regional and Global Peak Oil Events
+### Detect Regional and Global Peak Oil Events (CSV)
 ```
 from pyspark.sql import SQLContext, Row
 sqlContext = SQLContext(sc)
