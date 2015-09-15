@@ -32,6 +32,8 @@
 
 [StackExchange Data Dump (11GB)](https://archive.org/details/stackexchange)
 
+[Reddit Comments Data Dump](https://www.reddit.com/r/datasets/comments/3bxlg7/i_have_every_publicly_available_reddit_comment/)
+
 **Electrocardiograms:**  
 [What the data looks like](http://dserban.github.io/physiobank/chart.html)  
 Where to get the data:
