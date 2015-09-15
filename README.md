@@ -30,6 +30,8 @@
 
 [Graph Data - Apply PageRank to it](https://drive.google.com/file/d/0Bylu3dRYpIlXUDdjU2VweTE2MVU/view?usp=sharing)
 
+[StackExchange Data Dump (11GB)](https://archive.org/details/stackexchange)
+
 **Electrocardiograms:**  
 [What the data looks like](http://dserban.github.io/physiobank/chart.html)  
 Where to get the data:
