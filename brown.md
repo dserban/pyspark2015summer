@@ -15,3 +15,4 @@
 >>> len( brown.words(categories='romance') )
 70022
 ```
+[Download Just The Brown Corpus](http://ge.tt/8gMe52O2/v/0)
