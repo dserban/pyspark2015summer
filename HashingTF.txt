@@ -1,0 +1,32 @@
+t1 = 'Ana are mere'        # editorial
+v1 = [1,1,1,0,0,0]
+t2 = 'Ana are mere mere'   # fiction
+v2 = [1,1,2,0,0,0]
+t3 = 'Ana are mere pere'   # news
+v3 = [1,1,1,1,0,0]
+t4 = 'Ana are pere caise'  # romance
+v4 = [1,1,0,1,1,0]
+t5 = 'Ana are caise caise' # adventure
+v5 = [1,1,0,0,2,0]
+
+tnew = 'Ana are caise piersici'
+vnew = [1,1,0,0,1,1]
+
+domain = ['Ana', 'are', 'mere', 'pere', 'caise', 'piersici']
+
+def cosine_similarity(list1, list2):
+     result_of_zipping = zip(list1, list2)
+     numerator = sum([ zip_tuple[0] * zip_tuple[1] for zip_tuple in result_of_zipping ])
+     sum1 = sum([ x * x for x in list1 ])
+     sum2 = sum([ x * x for x in list2 ])
+     denominator = math.sqrt(sum1) * math.sqrt(sum2)
+     if not denominator:
+        return 0.0
+     else:
+        return float(numerator) / denominator
+
+from pyspark.mllib.feature import HashingTF
+
+tf = HashingTF(100000)
+
+tf.transform(t1.split())
