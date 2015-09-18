@@ -1,0 +1,18 @@
+$ cat conf/slaves # only on the master node
+172.16.15.222
+172.16.15.208
+
+$ cat conf/spark-env.sh
+export SPARK_MASTER_IP="172.16.15.222" # everywhere
+
+$ pyspark --master spark://172.16.15.222:7077 --executor-memory 2GB
+>>> sc.defaultParallelism
+8
+
+$ spark-submit --master spark://172.16.15.222:7077 --executor-memory 2G pagerank.py
+
+def add_host_name(l):
+    host_name = open('/tmp/machine.txt').readline().rstrip()
+    return [ (elem, host_name) for elem in l ]
+
+sc.parallelize( range(8) ).mapPartitions( lambda l: add_host_name(l) ).collect()
