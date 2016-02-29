@@ -38,7 +38,7 @@ class RDD(__builtin__.object)
  |      >>> sc.parallelize([]).aggregate((0, 0), seqOp, combOp)
  |      (0, 0)
  |  
- |  aggregateByKey(self, zeroValue, seqFunc, combFunc, numPartitions=None)
+ |  aggregateByKey(self, zeroValue, seqFunc, combFunc, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Aggregate the values of each key, using given combine functions and a neutral
  |      "zero value". This function can return a different result type, U, than the type
  |      of the values in this RDD, V. Thus, we need one operation for merging a V into
@@ -97,7 +97,7 @@ class RDD(__builtin__.object)
  |      >>> m[3]
  |      4
  |  
- |  combineByKey(self, createCombiner, mergeValue, mergeCombiners, numPartitions=None)
+ |  combineByKey(self, createCombiner, mergeValue, mergeCombiners, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Generic function to combine the elements for each key using a custom
  |      set of aggregation functions.
  |      
@@ -116,7 +116,6 @@ class RDD(__builtin__.object)
  |      In addition, users can control the partitioning of the output RDD.
  |      
  |      >>> x = sc.parallelize([("a", 1), ("b", 1), ("a", 1)])
- |      >>> def f(x): return x
  |      >>> def add(a, b): return a + str(b)
  |      >>> sorted(x.combineByKey(str, add, add).collect())
  |      [('a', '11'), ('b', '1')]
@@ -237,7 +236,7 @@ class RDD(__builtin__.object)
  |      >>> sc.parallelize([1, 2, 3, 4, 5]).fold(0, add)
  |      15
  |  
- |  foldByKey(self, zeroValue, func, numPartitions=None)
+ |  foldByKey(self, zeroValue, func, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Merge the values for each key using an associative function "func"
  |      and a neutral "zeroValue" which may be added to the result an
  |      arbitrary number of times, and must not change the result
@@ -307,7 +306,7 @@ class RDD(__builtin__.object)
  |      >>> sorted(rdd.glom().collect())
  |      [[1, 2], [3, 4]]
  |  
- |  groupBy(self, f, numPartitions=None)
+ |  groupBy(self, f, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Return an RDD of grouped items.
  |      
  |      >>> rdd = sc.parallelize([1, 1, 2, 3, 5, 8])
@@ -315,7 +314,7 @@ class RDD(__builtin__.object)
  |      >>> sorted([(x, sorted(y)) for (x, y) in result])
  |      [(0, [2, 8]), (1, [1, 1, 3, 5])]
  |  
- |  groupByKey(self, numPartitions=None)
+ |  groupByKey(self, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Group the values for each key in the RDD into a single sequence.
  |      Hash-partitions the resulting RDD with numPartitions partitions.
  |      
@@ -457,6 +456,9 @@ class RDD(__builtin__.object)
  |      [42]
  |      >>> sorted.lookup(1024)
  |      []
+ |      >>> rdd2 = sc.parallelize([(('a', 'b'), 'c')]).groupByKey()
+ |      >>> list(rdd2.lookup(('a', 'b'))[0])
+ |      ['c']
  |  
  |  map(self, f, preservesPartitioning=False)
  |      Return a new RDD by applying a function to each element of this RDD.
@@ -528,7 +530,7 @@ class RDD(__builtin__.object)
  |      
  |      >>> rdd = sc.parallelize(range(1000), 10)
  |      >>> r = sum(range(1000)) / 1000.0
- |      >>> (rdd.meanApprox(1000) - r) / r < 0.05
+ |      >>> abs(rdd.meanApprox(1000) - r) / r < 0.05
  |      True
  |  
  |  min(self, key=None)
@@ -563,11 +565,13 @@ class RDD(__builtin__.object)
  |      >>> rdd.persist().is_cached
  |      True
  |  
- |  pipe(self, command, env={})
+ |  pipe(self, command, env=None, checkCode=False)
  |      Return an RDD created by piping elements to a forked external process.
  |      
  |      >>> sc.parallelize(['1', '2', '', '3']).pipe('cat').collect()
  |      [u'1', u'2', u'', u'3']
+ |      
+ |      :param checkCode: whether or not to check the return value of the shell command.
  |  
  |  randomSplit(self, weights, seed=None)
  |      Randomly splits this RDD with the provided weights.
@@ -599,14 +603,15 @@ class RDD(__builtin__.object)
  |          ...
  |      ValueError: Can not reduce() empty RDD
  |  
- |  reduceByKey(self, func, numPartitions=None)
+ |  reduceByKey(self, func, numPartitions=None, partitionFunc=<function portable_hash>)
  |      Merge the values for each key using an associative reduce function.
  |      
  |      This will also perform the merging locally on each mapper before
  |      sending results to a reducer, similarly to a "combiner" in MapReduce.
  |      
- |      Output will be hash-partitioned with C{numPartitions} partitions, or
+ |      Output will be partitioned with C{numPartitions} partitions, or
  |      the default parallelism level if C{numPartitions} is not specified.
+ |      Default partitioner is hash-partition.
  |      
  |      >>> from operator import add
  |      >>> rdd = sc.parallelize([("a", 1), ("b", 1), ("a", 1)])
@@ -895,7 +900,7 @@ class RDD(__builtin__.object)
  |      
  |      >>> rdd = sc.parallelize(range(1000), 10)
  |      >>> r = sum(range(1000))
- |      >>> (rdd.sumApprox(1000) - r) / r < 0.05
+ |      >>> abs(rdd.sumApprox(1000) - r) / r < 0.05
  |      True
  |  
  |  take(self, num)
@@ -933,6 +938,18 @@ class RDD(__builtin__.object)
  |      5
  |      >>> len(rdd.takeSample(False, 15, 3))
  |      10
+ |  
+ |  toDF(self, schema=None, sampleRatio=None)
+ |      Converts current :class:`RDD` into a :class:`DataFrame`
+ |      
+ |      This is a shorthand for ``sqlContext.createDataFrame(rdd, schema, sampleRatio)``
+ |      
+ |      :param schema: a StructType or list of names of columns
+ |      :param samplingRatio: the sample ratio of rows used for inferring
+ |      :return: a DataFrame
+ |      
+ |      >>> rdd.toDF().collect()
+ |      [Row(name=u'Alice', age=1)]
  |  
  |  toDebugString(self)
  |      A description of this RDD and its recursive dependencies for debugging.
