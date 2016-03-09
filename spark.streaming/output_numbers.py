@@ -8,6 +8,6 @@ while True:
     for i in cycle_through:
         sleep(0.3)
         times_ten = i * 10
-        print choice( range(times_ten, times_ten + 10) )
+        print choice( range(times_ten, times_ten + 200) )
         stdout.flush()
 
