@@ -38,10 +38,11 @@
 
 **Electrocardiograms:**  
 [What the data looks like](http://dserban.github.io/physiobank/chart.html)  
-Where to get the data:
+Where to get the raw data and how to extract the CSV file from it:
 ```
 wget http://www.physionet.org/physiobank/database/mitdb/100.dat
 wget http://www.physionet.org/physiobank/database/mitdb/100.hea
+rdsamp -c -r mitdb/100 > 100.csv
 ```
 
 [Extract data from the NationStates API and run analytics on it](https://www.nationstates.net/pages/api.html)
