@@ -9,5 +9,3 @@ PageRank proceeds as follows:
 - Set each page’s rank to 0.15 + 0.85 * contributionsReceived.
 
 The last two steps repeat for several iterations, during which the algorithm will converge to the correct PageRank value for each page. In practice, it's typical to run about 10 iterations.
-
-See also [the Pregel paper](http://kowshik.github.io/JPregel/pregel_paper.pdf) and [this blog post](http://googleresearch.blogspot.ro/2009/06/large-scale-graph-computing-at-google.html).
