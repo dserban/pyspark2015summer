@@ -3,9 +3,8 @@
 spawn nc -lk 9999
 
 while { [gets stdin line] != -1 } {
-  sleep 1
   send "$line\n"
+  sleep 0.9
 }
 
 interact
-
