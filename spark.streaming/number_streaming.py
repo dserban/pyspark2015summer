@@ -13,8 +13,8 @@ if __name__ == "__main__":
     ssc.checkpoint('/tmp/sparkstreamingcheckpoint')
 
     lines = ssc.socketTextStream(argv[1], int(argv[2]))
-    sums =                                      \
-      lines                                     \
+    sums =                                     \
+      lines                                    \
       .map( lambda line: ('aggr', int(line)) ) \
       .reduceByKeyAndWindow(add, sub, 30, 5)
     sums.pprint()
