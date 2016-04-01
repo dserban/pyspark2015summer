@@ -47,6 +47,8 @@ rdsamp -c -r mitdb/100 > 100.csv
 
 [Extract data from the NationStates API and run analytics on it](https://www.nationstates.net/pages/api.html)
 
+[http://help.sentiment140.com/for-students/](http://help.sentiment140.com/for-students/)
+
 ### Data Locality
 
 [Data Partitioning Explained](https://www.safaribooksonline.com/library/view/learning-spark/9781449359034/ch04.html)
