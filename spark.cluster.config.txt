@@ -1,9 +1,10 @@
-$ cat conf/slaves # only on the master node
+$ cat conf/slaves # only on the master node # The master itself is also a slave
 172.16.15.222
 172.16.15.208
 
 $ cat conf/spark-env.sh
 export SPARK_MASTER_IP="172.16.15.222" # everywhere
+export SPARK_LOCAL_IP="127.0.0.1" # everywhere
 
 $ pyspark --master spark://172.16.15.222:7077 --executor-memory 2GB
 >>> sc.defaultParallelism
