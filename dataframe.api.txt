@@ -4,7 +4,7 @@ class DataFrame(__builtin__.object)
  |  A :class:`DataFrame` is equivalent to a relational table in Spark SQL,
  |  and can be created using various functions in :class:`SQLContext`::
  |  
- |      people = sqlContext.parquetFile("...")
+ |      people = sqlContext.read.parquet("...")
  |  
  |  Once created, it can be manipulated using the various domain-specific-language
  |  (DSL) functions defined in: :class:`DataFrame`, :class:`Column`.
@@ -16,12 +16,10 @@ class DataFrame(__builtin__.object)
  |  A more concrete example::
  |  
  |      # To create DataFrame using SQLContext
- |      people = sqlContext.parquetFile("...")
- |      department = sqlContext.parquetFile("...")
+ |      people = sqlContext.read.parquet("...")
+ |      department = sqlContext.read.parquet("...")
  |  
- |      people.filter(people.age > 30).join(department, people.deptId == department.id))           .groupBy(department.name, "gender").agg({"salary": "avg", "age": "max"})
- |  
- |  .. note:: Experimental
+ |      people.filter(people.age > 30).join(department, people.deptId == department.id)          .groupBy(department.name, "gender").agg({"salary": "avg", "age": "max"})
  |  
  |  .. versionadded:: 1.3
  |  
@@ -30,22 +28,22 @@ class DataFrame(__builtin__.object)
  |  __getattr__(self, name)
  |      Returns the :class:`Column` denoted by ``name``.
  |      
- |              >>> df.select(df.age).collect()
- |              [Row(age=2), Row(age=5)]
+ |      >>> df.select(df.age).collect()
+ |      [Row(age=2), Row(age=5)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  __getitem__(self, item)
  |      Returns the column as a :class:`Column`.
  |      
- |              >>> df.select(df['age']).collect()
- |              [Row(age=2), Row(age=5)]
- |              >>> df[ ["name", "age"]].collect()
- |              [Row(name=u'Alice', age=2), Row(name=u'Bob', age=5)]
- |              >>> df[ df.age > 3 ].collect()
- |              [Row(age=5, name=u'Bob')]
- |              >>> df[df[0] > 3].collect()
- |              [Row(age=5, name=u'Bob')]
+ |      >>> df.select(df['age']).collect()
+ |      [Row(age=2), Row(age=5)]
+ |      >>> df[ ["name", "age"]].collect()
+ |      [Row(name=u'Alice', age=2), Row(name=u'Bob', age=5)]
+ |      >>> df[ df.age > 3 ].collect()
+ |      [Row(age=5, name=u'Bob')]
+ |      >>> df[df[0] > 3].collect()
+ |      [Row(age=5, name=u'Bob')]
  |      
  |      .. versionadded:: 1.3
  |  
@@ -55,456 +53,514 @@ class DataFrame(__builtin__.object)
  |  
  |  agg(self, *exprs)
  |      Aggregate on the entire :class:`DataFrame` without groups
- |              (shorthand for ``df.groupBy.agg()``).
+ |      (shorthand for ``df.groupBy.agg()``).
  |      
- |              >>> df.agg({"age": "max"}).collect()
- |              [Row(MAX(age)=5)]
- |              >>> from pyspark.sql import functions as F
- |              >>> df.agg(F.min(df.age)).collect()
- |              [Row(MIN(age)=2)]
+ |      >>> df.agg({"age": "max"}).collect()
+ |      [Row(max(age)=5)]
+ |      >>> from pyspark.sql import functions as F
+ |      >>> df.agg(F.min(df.age)).collect()
+ |      [Row(min(age)=2)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  alias(self, alias)
  |      Returns a new :class:`DataFrame` with an alias set.
  |      
- |              >>> from pyspark.sql.functions import *
- |              >>> df_as1 = df.alias("df_as1")
- |              >>> df_as2 = df.alias("df_as2")
- |              >>> joined_df = df_as1.join(df_as2, col("df_as1.name") == col("df_as2.name"), 'inner')
- |              >>> joined_df.select(col("df_as1.name"), col("df_as2.name"), col("df_as2.age")).collect()
- |              [Row(name=u'Alice', name=u'Alice', age=2), Row(name=u'Bob', name=u'Bob', age=5)]
+ |      >>> from pyspark.sql.functions import *
+ |      >>> df_as1 = df.alias("df_as1")
+ |      >>> df_as2 = df.alias("df_as2")
+ |      >>> joined_df = df_as1.join(df_as2, col("df_as1.name") == col("df_as2.name"), 'inner')
+ |      >>> joined_df.select("df_as1.name", "df_as2.name", "df_as2.age").collect()
+ |      [Row(name=u'Bob', name=u'Bob', age=5), Row(name=u'Alice', name=u'Alice', age=2)]
  |      
  |      .. versionadded:: 1.3
  |  
+ |  approxQuantile(self, col, probabilities, relativeError)
+ |      Calculates the approximate quantiles of a numerical column of a
+ |      DataFrame.
+ |      
+ |      The result of this algorithm has the following deterministic bound:
+ |      If the DataFrame has N elements and if we request the quantile at
+ |      probability `p` up to error `err`, then the algorithm will return
+ |      a sample `x` from the DataFrame so that the *exact* rank of `x` is
+ |      close to (p * N). More precisely,
+ |      
+ |        floor((p - err) * N) <= rank(x) <= ceil((p + err) * N).
+ |      
+ |      This method implements a variation of the Greenwald-Khanna
+ |      algorithm (with some speed optimizations). The algorithm was first
+ |      present in [[http://dx.doi.org/10.1145/375663.375670
+ |      Space-efficient Online Computation of Quantile Summaries]]
+ |      by Greenwald and Khanna.
+ |      
+ |      :param col: the name of the numerical column
+ |      :param probabilities: a list of quantile probabilities
+ |        Each number must belong to [0, 1].
+ |        For example 0 is the minimum, 0.5 is the median, 1 is the maximum.
+ |      :param relativeError:  The relative target precision to achieve
+ |        (>= 0). If set to zero, the exact quantiles are computed, which
+ |        could be very expensive. Note that values greater than 1 are
+ |        accepted but give the same result as 1.
+ |      :return:  the approximate quantiles at the given probabilities
+ |      
+ |      .. versionadded:: 2.0
+ |  
  |  cache(self)
- |      Persists with the default storage level (C{MEMORY_ONLY_SER}).
+ |      Persists with the default storage level (C{MEMORY_ONLY}).
  |      
  |      .. versionadded:: 1.3
  |  
  |  coalesce(self, numPartitions)
- |              Returns a new :class:`DataFrame` that has exactly `numPartitions` partitions.
+ |      Returns a new :class:`DataFrame` that has exactly `numPartitions` partitions.
  |      
- |              Similar to coalesce defined on an :class:`RDD`, this operation results in a
- |              narrow dependency, e.g. if you go from 1000 partitions to 100 partitions,
- |              there will not be a shuffle, instead each of the 100 new partitions will
- |              claim 10 of the current partitions.
+ |      Similar to coalesce defined on an :class:`RDD`, this operation results in a
+ |      narrow dependency, e.g. if you go from 1000 partitions to 100 partitions,
+ |      there will not be a shuffle, instead each of the 100 new partitions will
+ |      claim 10 of the current partitions.
  |      
- |              >>> df.coalesce(1).rdd.getNumPartitions()
- |              1
+ |      >>> df.coalesce(1).rdd.getNumPartitions()
+ |      1
  |      
  |      .. versionadded:: 1.4
  |  
  |  collect(self)
  |      Returns all the records as a list of :class:`Row`.
  |      
- |              >>> df.collect()
- |              [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
+ |      >>> df.collect()
+ |      [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
  |      
  |      .. versionadded:: 1.3
  |  
  |  corr(self, col1, col2, method=None)
- |              Calculates the correlation of two columns of a DataFrame as a double value. Currently only
- |              supports the Pearson Correlation Coefficient.
- |              :func:`DataFrame.corr` and :func:`DataFrameStatFunctions.corr` are aliases.
+ |      Calculates the correlation of two columns of a DataFrame as a double value.
+ |      Currently only supports the Pearson Correlation Coefficient.
+ |      :func:`DataFrame.corr` and :func:`DataFrameStatFunctions.corr` are aliases of each other.
  |      
- |              :param col1: The name of the first column
- |              :param col2: The name of the second column
- |              :param method: The correlation method. Currently only supports "pearson"
+ |      :param col1: The name of the first column
+ |      :param col2: The name of the second column
+ |      :param method: The correlation method. Currently only supports "pearson"
  |      
  |      .. versionadded:: 1.4
  |  
  |  count(self)
  |      Returns the number of rows in this :class:`DataFrame`.
  |      
- |              >>> df.count()
- |              2
+ |      >>> df.count()
+ |      2
  |      
  |      .. versionadded:: 1.3
  |  
  |  cov(self, col1, col2)
- |              Calculate the sample covariance for the given columns, specified by their names, as a
- |              double value. :func:`DataFrame.cov` and :func:`DataFrameStatFunctions.cov` are aliases.
+ |      Calculate the sample covariance for the given columns, specified by their names, as a
+ |      double value. :func:`DataFrame.cov` and :func:`DataFrameStatFunctions.cov` are aliases.
  |      
- |              :param col1: The name of the first column
- |              :param col2: The name of the second column
+ |      :param col1: The name of the first column
+ |      :param col2: The name of the second column
  |      
  |      .. versionadded:: 1.4
  |  
- |  crosstab(self, col1, col2)
- |              Computes a pair-wise frequency table of the given columns. Also known as a contingency
- |              table. The number of distinct values for each column should be less than 1e4. At most 1e6
- |              non-zero pair frequencies will be returned.
- |              The first column of each row will be the distinct values of `col1` and the column names
- |              will be the distinct values of `col2`. The name of the first column will be `$col1_$col2`.
- |              Pairs that have no occurrences will have `null` as their counts.
- |              :func:`DataFrame.crosstab` and :func:`DataFrameStatFunctions.crosstab` are aliases.
+ |  createOrReplaceTempView(self, name)
+ |      Creates or replaces a temporary view with this DataFrame.
  |      
- |              :param col1: The name of the first column. Distinct items will make the first item of
- |                  each row.
- |              :param col2: The name of the second column. Distinct items will make the column names
- |                  of the DataFrame.
+ |      The lifetime of this temporary table is tied to the :class:`SparkSession`
+ |      that was used to create this :class:`DataFrame`.
+ |      
+ |      >>> df.createOrReplaceTempView("people")
+ |      >>> df2 = df.filter(df.age > 3)
+ |      >>> df2.createOrReplaceTempView("people")
+ |      >>> df3 = spark.sql("select * from people")
+ |      >>> sorted(df3.collect()) == sorted(df2.collect())
+ |      True
+ |      >>> spark.catalog.dropTempView("people")
+ |      
+ |      .. versionadded:: 2.0
+ |  
+ |  createTempView(self, name)
+ |      Creates a temporary view with this DataFrame.
+ |      
+ |      The lifetime of this temporary table is tied to the :class:`SparkSession`
+ |      that was used to create this :class:`DataFrame`.
+ |      throws :class:`TempTableAlreadyExistsException`, if the view name already exists in the
+ |      catalog.
+ |      
+ |      >>> df.createTempView("people")
+ |      >>> df2 = spark.sql("select * from people")
+ |      >>> sorted(df.collect()) == sorted(df2.collect())
+ |      True
+ |      >>> df.createTempView("people")  # doctest: +IGNORE_EXCEPTION_DETAIL
+ |      Traceback (most recent call last):
+ |      ...
+ |      AnalysisException: u"Temporary table 'people' already exists;"
+ |      >>> spark.catalog.dropTempView("people")
+ |      
+ |      .. versionadded:: 2.0
+ |  
+ |  crosstab(self, col1, col2)
+ |      Computes a pair-wise frequency table of the given columns. Also known as a contingency
+ |      table. The number of distinct values for each column should be less than 1e4. At most 1e6
+ |      non-zero pair frequencies will be returned.
+ |      The first column of each row will be the distinct values of `col1` and the column names
+ |      will be the distinct values of `col2`. The name of the first column will be `$col1_$col2`.
+ |      Pairs that have no occurrences will have zero as their counts.
+ |      :func:`DataFrame.crosstab` and :func:`DataFrameStatFunctions.crosstab` are aliases.
+ |      
+ |      :param col1: The name of the first column. Distinct items will make the first item of
+ |          each row.
+ |      :param col2: The name of the second column. Distinct items will make the column names
+ |          of the DataFrame.
  |      
  |      .. versionadded:: 1.4
  |  
  |  cube(self, *cols)
- |              Create a multi-dimensional cube for the current :class:`DataFrame` using
- |              the specified columns, so we can run aggregation on them.
+ |      Create a multi-dimensional cube for the current :class:`DataFrame` using
+ |      the specified columns, so we can run aggregation on them.
  |      
- |              >>> df.cube('name', df.age).count().show()
- |              +-----+----+-----+
- |              | name| age|count|
- |              +-----+----+-----+
- |              | null|   2|    1|
- |              |Alice|null|    1|
- |              |  Bob|   5|    1|
- |              |  Bob|null|    1|
- |              | null|   5|    1|
- |              | null|null|    2|
- |              |Alice|   2|    1|
- |              +-----+----+-----+
+ |      >>> df.cube("name", df.age).count().orderBy("name", "age").show()
+ |      +-----+----+-----+
+ |      | name| age|count|
+ |      +-----+----+-----+
+ |      | null|null|    2|
+ |      | null|   2|    1|
+ |      | null|   5|    1|
+ |      |Alice|null|    1|
+ |      |Alice|   2|    1|
+ |      |  Bob|null|    1|
+ |      |  Bob|   5|    1|
+ |      +-----+----+-----+
  |      
  |      .. versionadded:: 1.4
  |  
  |  describe(self, *cols)
  |      Computes statistics for numeric columns.
  |      
- |              This include count, mean, stddev, min, and max. If no columns are
- |              given, this function computes statistics for all numerical columns.
+ |      This include count, mean, stddev, min, and max. If no columns are
+ |      given, this function computes statistics for all numerical columns.
  |      
- |              >>> df.describe().show()
- |              +-------+---+
- |              |summary|age|
- |              +-------+---+
- |              |  count|  2|
- |              |   mean|3.5|
- |              | stddev|1.5|
- |              |    min|  2|
- |              |    max|  5|
- |              +-------+---+
+ |      .. note:: This function is meant for exploratory data analysis, as we make no         guarantee about the backward compatibility of the schema of the resulting DataFrame.
+ |      
+ |      >>> df.describe().show()
+ |      +-------+------------------+
+ |      |summary|               age|
+ |      +-------+------------------+
+ |      |  count|                 2|
+ |      |   mean|               3.5|
+ |      | stddev|2.1213203435596424|
+ |      |    min|                 2|
+ |      |    max|                 5|
+ |      +-------+------------------+
+ |      >>> df.describe(['age', 'name']).show()
+ |      +-------+------------------+-----+
+ |      |summary|               age| name|
+ |      +-------+------------------+-----+
+ |      |  count|                 2|    2|
+ |      |   mean|               3.5| null|
+ |      | stddev|2.1213203435596424| null|
+ |      |    min|                 2|Alice|
+ |      |    max|                 5|  Bob|
+ |      +-------+------------------+-----+
  |      
  |      .. versionadded:: 1.3.1
  |  
  |  distinct(self)
  |      Returns a new :class:`DataFrame` containing the distinct rows in this :class:`DataFrame`.
  |      
- |              >>> df.distinct().count()
- |              2
+ |      >>> df.distinct().count()
+ |      2
  |      
  |      .. versionadded:: 1.3
  |  
- |  drop(self, colName)
+ |  drop(self, col)
  |      Returns a new :class:`DataFrame` that drops the specified column.
  |      
- |              :param colName: string, name of the column to drop.
+ |      :param col: a string name of the column to drop, or a
+ |          :class:`Column` to drop.
  |      
- |              >>> df.drop('age').collect()
- |              [Row(name=u'Alice'), Row(name=u'Bob')]
+ |      >>> df.drop('age').collect()
+ |      [Row(name=u'Alice'), Row(name=u'Bob')]
+ |      
+ |      >>> df.drop(df.age).collect()
+ |      [Row(name=u'Alice'), Row(name=u'Bob')]
+ |      
+ |      >>> df.join(df2, df.name == df2.name, 'inner').drop(df.name).collect()
+ |      [Row(age=5, height=85, name=u'Bob')]
+ |      
+ |      >>> df.join(df2, df.name == df2.name, 'inner').drop(df2.name).collect()
+ |      [Row(age=5, name=u'Bob', height=85)]
  |      
  |      .. versionadded:: 1.4
  |  
  |  dropDuplicates(self, subset=None)
  |      Return a new :class:`DataFrame` with duplicate rows removed,
- |              optionally only considering certain columns.
+ |      optionally only considering certain columns.
  |      
- |              >>> from pyspark.sql import Row
- |              >>> df = sc.parallelize([             Row(name='Alice', age=5, height=80),             Row(name='Alice', age=5, height=80),             Row(name='Alice', age=10, height=80)]).toDF()
- |              >>> df.dropDuplicates().show()
- |              +---+------+-----+
- |              |age|height| name|
- |              +---+------+-----+
- |              |  5|    80|Alice|
- |              | 10|    80|Alice|
- |              +---+------+-----+
+ |      :func:`drop_duplicates` is an alias for :func:`dropDuplicates`.
  |      
- |              >>> df.dropDuplicates(['name', 'height']).show()
- |              +---+------+-----+
- |              |age|height| name|
- |              +---+------+-----+
- |              |  5|    80|Alice|
- |              +---+------+-----+
+ |      >>> from pyspark.sql import Row
+ |      >>> df = sc.parallelize([ \
+ |      ...     Row(name='Alice', age=5, height=80), \
+ |      ...     Row(name='Alice', age=5, height=80), \
+ |      ...     Row(name='Alice', age=10, height=80)]).toDF()
+ |      >>> df.dropDuplicates().show()
+ |      +---+------+-----+
+ |      |age|height| name|
+ |      +---+------+-----+
+ |      |  5|    80|Alice|
+ |      | 10|    80|Alice|
+ |      +---+------+-----+
+ |      
+ |      >>> df.dropDuplicates(['name', 'height']).show()
+ |      +---+------+-----+
+ |      |age|height| name|
+ |      +---+------+-----+
+ |      |  5|    80|Alice|
+ |      +---+------+-----+
  |      
  |      .. versionadded:: 1.4
  |  
  |  drop_duplicates = dropDuplicates(self, subset=None)
+ |      :func:`drop_duplicates` is an alias for :func:`dropDuplicates`.
+ |      
+ |      .. versionadded:: 1.4
  |  
  |  dropna(self, how='any', thresh=None, subset=None)
  |      Returns a new :class:`DataFrame` omitting rows with null values.
+ |      :func:`DataFrame.dropna` and :func:`DataFrameNaFunctions.drop` are aliases of each other.
  |      
- |              This is an alias for ``na.drop()``.
+ |      :param how: 'any' or 'all'.
+ |          If 'any', drop a row if it contains any nulls.
+ |          If 'all', drop a row only if all its values are null.
+ |      :param thresh: int, default None
+ |          If specified, drop rows that have less than `thresh` non-null values.
+ |          This overwrites the `how` parameter.
+ |      :param subset: optional list of column names to consider.
  |      
- |              :param how: 'any' or 'all'.
- |                  If 'any', drop a row if it contains any nulls.
- |                  If 'all', drop a row only if all its values are null.
- |              :param thresh: int, default None
- |                  If specified, drop rows that have less than `thresh` non-null values.
- |                  This overwrites the `how` parameter.
- |              :param subset: optional list of column names to consider.
- |      
- |              >>> df4.dropna().show()
- |              +---+------+-----+
- |              |age|height| name|
- |              +---+------+-----+
- |              | 10|    80|Alice|
- |              +---+------+-----+
- |      
- |              >>> df4.na.drop().show()
- |              +---+------+-----+
- |              |age|height| name|
- |              +---+------+-----+
- |              | 10|    80|Alice|
- |              +---+------+-----+
+ |      >>> df4.na.drop().show()
+ |      +---+------+-----+
+ |      |age|height| name|
+ |      +---+------+-----+
+ |      | 10|    80|Alice|
+ |      +---+------+-----+
  |      
  |      .. versionadded:: 1.3.1
  |  
  |  explain(self, extended=False)
  |      Prints the (logical and physical) plans to the console for debugging purpose.
  |      
- |              :param extended: boolean, default ``False``. If ``False``, prints only the physical plan.
+ |      :param extended: boolean, default ``False``. If ``False``, prints only the physical plan.
  |      
- |              >>> df.explain()
- |              PhysicalRDD [age#0,name#1], MapPartitionsRDD[...] at applySchemaToPythonRDD at          NativeMethodAccessorImpl.java:...
+ |      >>> df.explain()
+ |      == Physical Plan ==
+ |      Scan ExistingRDD[age#0,name#1]
  |      
- |              >>> df.explain(True)
- |              == Parsed Logical Plan ==
- |              ...
- |              == Analyzed Logical Plan ==
- |              ...
- |              == Optimized Logical Plan ==
- |              ...
- |              == Physical Plan ==
- |              ...
- |              == RDD ==
+ |      >>> df.explain(True)
+ |      == Parsed Logical Plan ==
+ |      ...
+ |      == Analyzed Logical Plan ==
+ |      ...
+ |      == Optimized Logical Plan ==
+ |      ...
+ |      == Physical Plan ==
+ |      ...
  |      
  |      .. versionadded:: 1.3
  |  
  |  fillna(self, value, subset=None)
  |      Replace null values, alias for ``na.fill()``.
+ |      :func:`DataFrame.fillna` and :func:`DataFrameNaFunctions.fill` are aliases of each other.
  |      
- |              :param value: int, long, float, string, or dict.
- |                  Value to replace null values with.
- |                  If the value is a dict, then `subset` is ignored and `value` must be a mapping
- |                  from column name (string) to replacement value. The replacement value must be
- |                  an int, long, float, or string.
- |              :param subset: optional list of column names to consider.
- |                  Columns specified in subset that do not have matching data type are ignored.
- |                  For example, if `value` is a string, and subset contains a non-string column,
- |                  then the non-string column is simply ignored.
+ |      :param value: int, long, float, string, or dict.
+ |          Value to replace null values with.
+ |          If the value is a dict, then `subset` is ignored and `value` must be a mapping
+ |          from column name (string) to replacement value. The replacement value must be
+ |          an int, long, float, or string.
+ |      :param subset: optional list of column names to consider.
+ |          Columns specified in subset that do not have matching data type are ignored.
+ |          For example, if `value` is a string, and subset contains a non-string column,
+ |          then the non-string column is simply ignored.
  |      
- |              >>> df4.fillna(50).show()
- |              +---+------+-----+
- |              |age|height| name|
- |              +---+------+-----+
- |              | 10|    80|Alice|
- |              |  5|    50|  Bob|
- |              | 50|    50|  Tom|
- |              | 50|    50| null|
- |              +---+------+-----+
+ |      >>> df4.na.fill(50).show()
+ |      +---+------+-----+
+ |      |age|height| name|
+ |      +---+------+-----+
+ |      | 10|    80|Alice|
+ |      |  5|    50|  Bob|
+ |      | 50|    50|  Tom|
+ |      | 50|    50| null|
+ |      +---+------+-----+
  |      
- |              >>> df4.fillna({'age': 50, 'name': 'unknown'}).show()
- |              +---+------+-------+
- |              |age|height|   name|
- |              +---+------+-------+
- |              | 10|    80|  Alice|
- |              |  5|  null|    Bob|
- |              | 50|  null|    Tom|
- |              | 50|  null|unknown|
- |              +---+------+-------+
- |      
- |              >>> df4.na.fill({'age': 50, 'name': 'unknown'}).show()
- |              +---+------+-------+
- |              |age|height|   name|
- |              +---+------+-------+
- |              | 10|    80|  Alice|
- |              |  5|  null|    Bob|
- |              | 50|  null|    Tom|
- |              | 50|  null|unknown|
- |              +---+------+-------+
+ |      >>> df4.na.fill({'age': 50, 'name': 'unknown'}).show()
+ |      +---+------+-------+
+ |      |age|height|   name|
+ |      +---+------+-------+
+ |      | 10|    80|  Alice|
+ |      |  5|  null|    Bob|
+ |      | 50|  null|    Tom|
+ |      | 50|  null|unknown|
+ |      +---+------+-------+
  |      
  |      .. versionadded:: 1.3.1
  |  
  |  filter(self, condition)
  |      Filters rows using the given condition.
  |      
- |              :func:`where` is an alias for :func:`filter`.
+ |      :func:`where` is an alias for :func:`filter`.
  |      
- |              :param condition: a :class:`Column` of :class:`types.BooleanType`
- |                  or a string of SQL expression.
+ |      :param condition: a :class:`Column` of :class:`types.BooleanType`
+ |          or a string of SQL expression.
  |      
- |              >>> df.filter(df.age > 3).collect()
- |              [Row(age=5, name=u'Bob')]
- |              >>> df.where(df.age == 2).collect()
- |              [Row(age=2, name=u'Alice')]
+ |      >>> df.filter(df.age > 3).collect()
+ |      [Row(age=5, name=u'Bob')]
+ |      >>> df.where(df.age == 2).collect()
+ |      [Row(age=2, name=u'Alice')]
  |      
- |              >>> df.filter("age > 3").collect()
- |              [Row(age=5, name=u'Bob')]
- |              >>> df.where("age = 2").collect()
- |              [Row(age=2, name=u'Alice')]
+ |      >>> df.filter("age > 3").collect()
+ |      [Row(age=5, name=u'Bob')]
+ |      >>> df.where("age = 2").collect()
+ |      [Row(age=2, name=u'Alice')]
  |      
  |      .. versionadded:: 1.3
  |  
  |  first(self)
  |      Returns the first row as a :class:`Row`.
  |      
- |              >>> df.first()
- |              Row(age=2, name=u'Alice')
- |      
- |      .. versionadded:: 1.3
- |  
- |  flatMap(self, f)
- |      Returns a new :class:`RDD` by first applying the ``f`` function to each :class:`Row`,
- |              and then flattening the results.
- |      
- |              This is a shorthand for ``df.rdd.flatMap()``.
- |      
- |              >>> df.flatMap(lambda p: p.name).collect()
- |              [u'A', u'l', u'i', u'c', u'e', u'B', u'o', u'b']
+ |      >>> df.first()
+ |      Row(age=2, name=u'Alice')
  |      
  |      .. versionadded:: 1.3
  |  
  |  foreach(self, f)
  |      Applies the ``f`` function to all :class:`Row` of this :class:`DataFrame`.
  |      
- |              This is a shorthand for ``df.rdd.foreach()``.
+ |      This is a shorthand for ``df.rdd.foreach()``.
  |      
- |              >>> def f(person):
- |              ...     print(person.name)
- |              >>> df.foreach(f)
+ |      >>> def f(person):
+ |      ...     print(person.name)
+ |      >>> df.foreach(f)
  |      
  |      .. versionadded:: 1.3
  |  
  |  foreachPartition(self, f)
  |      Applies the ``f`` function to each partition of this :class:`DataFrame`.
  |      
- |              This a shorthand for ``df.rdd.foreachPartition()``.
+ |      This a shorthand for ``df.rdd.foreachPartition()``.
  |      
- |              >>> def f(people):
- |              ...     for person in people:
- |              ...         print(person.name)
- |              >>> df.foreachPartition(f)
+ |      >>> def f(people):
+ |      ...     for person in people:
+ |      ...         print(person.name)
+ |      >>> df.foreachPartition(f)
  |      
  |      .. versionadded:: 1.3
  |  
  |  freqItems(self, cols, support=None)
- |              Finding frequent items for columns, possibly with false positives. Using the
- |              frequent element count algorithm described in
- |              "http://dx.doi.org/10.1145/762471.762473, proposed by Karp, Schenker, and Papadimitriou".
- |              :func:`DataFrame.freqItems` and :func:`DataFrameStatFunctions.freqItems` are aliases.
+ |      Finding frequent items for columns, possibly with false positives. Using the
+ |      frequent element count algorithm described in
+ |      "http://dx.doi.org/10.1145/762471.762473, proposed by Karp, Schenker, and Papadimitriou".
+ |      :func:`DataFrame.freqItems` and :func:`DataFrameStatFunctions.freqItems` are aliases.
  |      
- |              This function is meant for exploratory data analysis, as we make no guarantee about the
- |              backward compatibility of the schema of the resulting DataFrame.
+ |      .. note::  This function is meant for exploratory data analysis, as we make no         guarantee about the backward compatibility of the schema of the resulting DataFrame.
  |      
- |              :param cols: Names of the columns to calculate frequent items for as a list or tuple of
- |                  strings.
- |              :param support: The frequency with which to consider an item 'frequent'. Default is 1%.
- |                  The support must be greater than 1e-4.
+ |      :param cols: Names of the columns to calculate frequent items for as a list or tuple of
+ |          strings.
+ |      :param support: The frequency with which to consider an item 'frequent'. Default is 1%.
+ |          The support must be greater than 1e-4.
  |      
  |      .. versionadded:: 1.4
  |  
  |  groupBy(self, *cols)
  |      Groups the :class:`DataFrame` using the specified columns,
- |              so we can run aggregation on them. See :class:`GroupedData`
- |              for all the available aggregate functions.
+ |      so we can run aggregation on them. See :class:`GroupedData`
+ |      for all the available aggregate functions.
  |      
- |              :func:`groupby` is an alias for :func:`groupBy`.
+ |      :func:`groupby` is an alias for :func:`groupBy`.
  |      
- |              :param cols: list of columns to group by.
- |                  Each element should be a column name (string) or an expression (:class:`Column`).
+ |      :param cols: list of columns to group by.
+ |          Each element should be a column name (string) or an expression (:class:`Column`).
  |      
- |              >>> df.groupBy().avg().collect()
- |              [Row(AVG(age)=3.5)]
- |              >>> df.groupBy('name').agg({'age': 'mean'}).collect()
- |              [Row(name=u'Alice', AVG(age)=2.0), Row(name=u'Bob', AVG(age)=5.0)]
- |              >>> df.groupBy(df.name).avg().collect()
- |              [Row(name=u'Alice', AVG(age)=2.0), Row(name=u'Bob', AVG(age)=5.0)]
- |              >>> df.groupBy(['name', df.age]).count().collect()
- |              [Row(name=u'Bob', age=5, count=1), Row(name=u'Alice', age=2, count=1)]
+ |      >>> df.groupBy().avg().collect()
+ |      [Row(avg(age)=3.5)]
+ |      >>> sorted(df.groupBy('name').agg({'age': 'mean'}).collect())
+ |      [Row(name=u'Alice', avg(age)=2.0), Row(name=u'Bob', avg(age)=5.0)]
+ |      >>> sorted(df.groupBy(df.name).avg().collect())
+ |      [Row(name=u'Alice', avg(age)=2.0), Row(name=u'Bob', avg(age)=5.0)]
+ |      >>> sorted(df.groupBy(['name', df.age]).count().collect())
+ |      [Row(name=u'Alice', age=2, count=1), Row(name=u'Bob', age=5, count=1)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  groupby = groupBy(self, *cols)
+ |      :func:`groupby` is an alias for :func:`groupBy`.
+ |      
+ |      .. versionadded:: 1.4
  |  
  |  head(self, n=None)
- |              Returns the first ``n`` rows as a list of :class:`Row`,
- |              or the first :class:`Row` if ``n`` is ``None.``
+ |      Returns the first ``n`` rows.
  |      
- |              >>> df.head()
- |              Row(age=2, name=u'Alice')
- |              >>> df.head(1)
- |              [Row(age=2, name=u'Alice')]
+ |      Note that this method should only be used if the resulting array is expected
+ |      to be small, as all the data is loaded into the driver's memory.
  |      
- |      .. versionadded:: 1.3
- |  
- |  insertInto(self, tableName, overwrite=False)
- |      Inserts the contents of this :class:`DataFrame` into the specified table.
+ |      :param n: int, default 1. Number of rows to return.
+ |      :return: If n is greater than 1, return a list of :class:`Row`.
+ |          If n is 1, return a single Row.
  |      
- |              Optionally overwriting any existing data.
+ |      >>> df.head()
+ |      Row(age=2, name=u'Alice')
+ |      >>> df.head(1)
+ |      [Row(age=2, name=u'Alice')]
  |      
  |      .. versionadded:: 1.3
  |  
  |  intersect(self, other)
  |      Return a new :class:`DataFrame` containing rows only in
- |              both this frame and another frame.
+ |      both this frame and another frame.
  |      
- |              This is equivalent to `INTERSECT` in SQL.
+ |      This is equivalent to `INTERSECT` in SQL.
  |      
  |      .. versionadded:: 1.3
  |  
  |  isLocal(self)
  |      Returns ``True`` if the :func:`collect` and :func:`take` methods can be run locally
- |              (without any Spark executors).
+ |      (without any Spark executors).
  |      
  |      .. versionadded:: 1.3
  |  
- |  join(self, other, joinExprs=None, joinType=None)
+ |  join(self, other, on=None, how=None)
  |      Joins with another :class:`DataFrame`, using the given join expression.
  |      
- |              The following performs a full outer join between ``df1`` and ``df2``.
+ |      :param other: Right side of the join
+ |      :param on: a string for the join column name, a list of column names,
+ |          a join expression (Column), or a list of Columns.
+ |          If `on` is a string or a list of strings indicating the name of the join column(s),
+ |          the column(s) must exist on both sides, and this performs an equi-join.
+ |      :param how: str, default 'inner'.
+ |          One of `inner`, `outer`, `left_outer`, `right_outer`, `leftsemi`.
  |      
- |              :param other: Right side of the join
- |              :param joinExprs: a string for join column name, or a join expression (Column).
- |                  If joinExprs is a string indicating the name of the join column,
- |                  the column must exist on both sides, and this performs an inner equi-join.
- |              :param joinType: str, default 'inner'.
- |                  One of `inner`, `outer`, `left_outer`, `right_outer`, `semijoin`.
+ |      The following performs a full outer join between ``df1`` and ``df2``.
  |      
- |              >>> df.join(df2, df.name == df2.name, 'outer').select(df.name, df2.height).collect()
- |              [Row(name=None, height=80), Row(name=u'Alice', height=None), Row(name=u'Bob', height=85)]
+ |      >>> df.join(df2, df.name == df2.name, 'outer').select(df.name, df2.height).collect()
+ |      [Row(name=None, height=80), Row(name=u'Bob', height=85), Row(name=u'Alice', height=None)]
  |      
- |              >>> df.join(df2, 'name').select(df.name, df2.height).collect()
- |              [Row(name=u'Bob', height=85)]
+ |      >>> df.join(df2, 'name', 'outer').select('name', 'height').collect()
+ |      [Row(name=u'Tom', height=80), Row(name=u'Bob', height=85), Row(name=u'Alice', height=None)]
+ |      
+ |      >>> cond = [df.name == df3.name, df.age == df3.age]
+ |      >>> df.join(df3, cond, 'outer').select(df.name, df3.age).collect()
+ |      [Row(name=u'Alice', age=2), Row(name=u'Bob', age=5)]
+ |      
+ |      >>> df.join(df2, 'name').select(df.name, df2.height).collect()
+ |      [Row(name=u'Bob', height=85)]
+ |      
+ |      >>> df.join(df4, ['name', 'age']).select(df.name, df.age).collect()
+ |      [Row(name=u'Bob', age=5)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  limit(self, num)
  |      Limits the result count to the number specified.
  |      
- |              >>> df.limit(1).collect()
- |              [Row(age=2, name=u'Alice')]
- |              >>> df.limit(0).collect()
- |              []
- |      
- |      .. versionadded:: 1.3
- |  
- |  map(self, f)
- |      Returns a new :class:`RDD` by applying a the ``f`` function to each :class:`Row`.
- |      
- |              This is a shorthand for ``df.rdd.map()``.
- |      
- |              >>> df.map(lambda p: p.name).collect()
- |              [u'Alice', u'Bob']
- |      
- |      .. versionadded:: 1.3
- |  
- |  mapPartitions(self, f, preservesPartitioning=False)
- |      Returns a new :class:`RDD` by applying the ``f`` function to each partition.
- |      
- |              This is a shorthand for ``df.rdd.mapPartitions()``.
- |      
- |              >>> rdd = sc.parallelize([1, 2, 3, 4], 4)
- |              >>> def f(iterator): yield 1
- |              >>> rdd.mapPartitions(f).sum()
- |              4
+ |      >>> df.limit(1).collect()
+ |      [Row(age=2, name=u'Alice')]
+ |      >>> df.limit(0).collect()
+ |      []
  |      
  |      .. versionadded:: 1.3
  |  
@@ -512,317 +568,388 @@ class DataFrame(__builtin__.object)
  |  
  |  persist(self, storageLevel=StorageLevel(False, True, False, False, 1))
  |      Sets the storage level to persist its values across operations
- |              after the first time it is computed. This can only be used to assign
- |              a new storage level if the RDD does not have a storage level set yet.
- |              If no storage level is specified defaults to (C{MEMORY_ONLY_SER}).
+ |      after the first time it is computed. This can only be used to assign
+ |      a new storage level if the RDD does not have a storage level set yet.
+ |      If no storage level is specified defaults to (C{MEMORY_ONLY}).
  |      
  |      .. versionadded:: 1.3
  |  
  |  printSchema(self)
  |      Prints out the schema in the tree format.
  |      
- |              >>> df.printSchema()
- |              root
- |               |-- age: integer (nullable = true)
- |               |-- name: string (nullable = true)
- |              <BLANKLINE>
+ |      >>> df.printSchema()
+ |      root
+ |       |-- age: integer (nullable = true)
+ |       |-- name: string (nullable = true)
+ |      <BLANKLINE>
  |      
  |      .. versionadded:: 1.3
  |  
  |  randomSplit(self, weights, seed=None)
  |      Randomly splits this :class:`DataFrame` with the provided weights.
  |      
- |              :param weights: list of doubles as weights with which to split the DataFrame. Weights will
- |                  be normalized if they don't sum up to 1.0.
- |              :param seed: The seed for sampling.
+ |      :param weights: list of doubles as weights with which to split the DataFrame. Weights will
+ |          be normalized if they don't sum up to 1.0.
+ |      :param seed: The seed for sampling.
  |      
- |              >>> splits = df4.randomSplit([1.0, 2.0], 24)
- |              >>> splits[0].count()
- |              1
+ |      >>> splits = df4.randomSplit([1.0, 2.0], 24)
+ |      >>> splits[0].count()
+ |      1
  |      
- |              >>> splits[1].count()
- |              3
+ |      >>> splits[1].count()
+ |      3
  |      
  |      .. versionadded:: 1.4
- |  
- |  registerAsTable(self, name)
- |      DEPRECATED: use :func:`registerTempTable` instead
- |      
- |      .. versionadded:: 1.3
  |  
  |  registerTempTable(self, name)
  |      Registers this RDD as a temporary table using the given name.
  |      
- |              The lifetime of this temporary table is tied to the :class:`SQLContext`
- |              that was used to create this :class:`DataFrame`.
+ |      The lifetime of this temporary table is tied to the :class:`SQLContext`
+ |      that was used to create this :class:`DataFrame`.
  |      
- |              >>> df.registerTempTable("people")
- |              >>> df2 = sqlContext.sql("select * from people")
- |              >>> sorted(df.collect()) == sorted(df2.collect())
- |              True
+ |      >>> df.registerTempTable("people")
+ |      >>> df2 = spark.sql("select * from people")
+ |      >>> sorted(df.collect()) == sorted(df2.collect())
+ |      True
+ |      >>> spark.catalog.dropTempView("people")
+ |      
+ |      .. note:: Deprecated in 2.0, use createOrReplaceTempView instead.
  |      
  |      .. versionadded:: 1.3
  |  
- |  repartition(self, numPartitions)
- |      Returns a new :class:`DataFrame` that has exactly ``numPartitions`` partitions.
+ |  repartition(self, numPartitions, *cols)
+ |      Returns a new :class:`DataFrame` partitioned by the given partitioning expressions. The
+ |      resulting DataFrame is hash partitioned.
  |      
- |              >>> df.repartition(10).rdd.getNumPartitions()
- |              10
+ |      ``numPartitions`` can be an int to specify the target number of partitions or a Column.
+ |      If it is a Column, it will be used as the first partitioning column. If not specified,
+ |      the default number of partitions is used.
+ |      
+ |      .. versionchanged:: 1.6
+ |         Added optional arguments to specify the partitioning columns. Also made numPartitions
+ |         optional if partitioning columns are specified.
+ |      
+ |      >>> df.repartition(10).rdd.getNumPartitions()
+ |      10
+ |      >>> data = df.union(df).repartition("age")
+ |      >>> data.show()
+ |      +---+-----+
+ |      |age| name|
+ |      +---+-----+
+ |      |  5|  Bob|
+ |      |  5|  Bob|
+ |      |  2|Alice|
+ |      |  2|Alice|
+ |      +---+-----+
+ |      >>> data = data.repartition(7, "age")
+ |      >>> data.show()
+ |      +---+-----+
+ |      |age| name|
+ |      +---+-----+
+ |      |  5|  Bob|
+ |      |  5|  Bob|
+ |      |  2|Alice|
+ |      |  2|Alice|
+ |      +---+-----+
+ |      >>> data.rdd.getNumPartitions()
+ |      7
+ |      >>> data = data.repartition("name", "age")
+ |      >>> data.show()
+ |      +---+-----+
+ |      |age| name|
+ |      +---+-----+
+ |      |  5|  Bob|
+ |      |  5|  Bob|
+ |      |  2|Alice|
+ |      |  2|Alice|
+ |      +---+-----+
  |      
  |      .. versionadded:: 1.3
  |  
  |  replace(self, to_replace, value, subset=None)
  |      Returns a new :class:`DataFrame` replacing a value with another value.
+ |      :func:`DataFrame.replace` and :func:`DataFrameNaFunctions.replace` are
+ |      aliases of each other.
  |      
- |              :param to_replace: int, long, float, string, or list.
- |                  Value to be replaced.
- |                  If the value is a dict, then `value` is ignored and `to_replace` must be a
- |                  mapping from column name (string) to replacement value. The value to be
- |                  replaced must be an int, long, float, or string.
- |              :param value: int, long, float, string, or list.
- |                  Value to use to replace holes.
- |                  The replacement value must be an int, long, float, or string. If `value` is a
- |                  list or tuple, `value` should be of the same length with `to_replace`.
- |              :param subset: optional list of column names to consider.
- |                  Columns specified in subset that do not have matching data type are ignored.
- |                  For example, if `value` is a string, and subset contains a non-string column,
- |                  then the non-string column is simply ignored.
+ |      :param to_replace: int, long, float, string, or list.
+ |          Value to be replaced.
+ |          If the value is a dict, then `value` is ignored and `to_replace` must be a
+ |          mapping from column name (string) to replacement value. The value to be
+ |          replaced must be an int, long, float, or string.
+ |      :param value: int, long, float, string, or list.
+ |          Value to use to replace holes.
+ |          The replacement value must be an int, long, float, or string. If `value` is a
+ |          list or tuple, `value` should be of the same length with `to_replace`.
+ |      :param subset: optional list of column names to consider.
+ |          Columns specified in subset that do not have matching data type are ignored.
+ |          For example, if `value` is a string, and subset contains a non-string column,
+ |          then the non-string column is simply ignored.
  |      
- |              >>> df4.replace(10, 20).show()
- |              +----+------+-----+
- |              | age|height| name|
- |              +----+------+-----+
- |              |  20|    80|Alice|
- |              |   5|  null|  Bob|
- |              |null|  null|  Tom|
- |              |null|  null| null|
- |              +----+------+-----+
+ |      >>> df4.na.replace(10, 20).show()
+ |      +----+------+-----+
+ |      | age|height| name|
+ |      +----+------+-----+
+ |      |  20|    80|Alice|
+ |      |   5|  null|  Bob|
+ |      |null|  null|  Tom|
+ |      |null|  null| null|
+ |      +----+------+-----+
  |      
- |              >>> df4.replace(['Alice', 'Bob'], ['A', 'B'], 'name').show()
- |              +----+------+----+
- |              | age|height|name|
- |              +----+------+----+
- |              |  10|    80|   A|
- |              |   5|  null|   B|
- |              |null|  null| Tom|
- |              |null|  null|null|
- |              +----+------+----+
+ |      >>> df4.na.replace(['Alice', 'Bob'], ['A', 'B'], 'name').show()
+ |      +----+------+----+
+ |      | age|height|name|
+ |      +----+------+----+
+ |      |  10|    80|   A|
+ |      |   5|  null|   B|
+ |      |null|  null| Tom|
+ |      |null|  null|null|
+ |      +----+------+----+
  |      
  |      .. versionadded:: 1.4
  |  
  |  rollup(self, *cols)
- |              Create a multi-dimensional rollup for the current :class:`DataFrame` using
- |              the specified columns, so we can run aggregation on them.
+ |      Create a multi-dimensional rollup for the current :class:`DataFrame` using
+ |      the specified columns, so we can run aggregation on them.
  |      
- |              >>> df.rollup('name', df.age).count().show()
- |              +-----+----+-----+
- |              | name| age|count|
- |              +-----+----+-----+
- |              |Alice|null|    1|
- |              |  Bob|   5|    1|
- |              |  Bob|null|    1|
- |              | null|null|    2|
- |              |Alice|   2|    1|
- |              +-----+----+-----+
+ |      >>> df.rollup("name", df.age).count().orderBy("name", "age").show()
+ |      +-----+----+-----+
+ |      | name| age|count|
+ |      +-----+----+-----+
+ |      | null|null|    2|
+ |      |Alice|null|    1|
+ |      |Alice|   2|    1|
+ |      |  Bob|null|    1|
+ |      |  Bob|   5|    1|
+ |      +-----+----+-----+
  |      
  |      .. versionadded:: 1.4
  |  
  |  sample(self, withReplacement, fraction, seed=None)
  |      Returns a sampled subset of this :class:`DataFrame`.
  |      
- |              >>> df.sample(False, 0.5, 42).count()
- |              1
+ |      >>> df.sample(False, 0.5, 42).count()
+ |      2
  |      
  |      .. versionadded:: 1.3
  |  
- |  save(self, path=None, source=None, mode='error', **options)
- |      Saves the contents of the :class:`DataFrame` to a data source.
+ |  sampleBy(self, col, fractions, seed=None)
+ |      Returns a stratified sample without replacement based on the
+ |      fraction given on each stratum.
  |      
- |              The data source is specified by the ``source`` and a set of ``options``.
- |              If ``source`` is not specified, the default data source configured by
- |              ``spark.sql.sources.default`` will be used.
+ |      :param col: column that defines strata
+ |      :param fractions:
+ |          sampling fraction for each stratum. If a stratum is not
+ |          specified, we treat its fraction as zero.
+ |      :param seed: random seed
+ |      :return: a new DataFrame that represents the stratified sample
  |      
- |              Additionally, mode is used to specify the behavior of the save operation when
- |              data already exists in the data source. There are four modes:
+ |      >>> from pyspark.sql.functions import col
+ |      >>> dataset = sqlContext.range(0, 100).select((col("id") % 3).alias("key"))
+ |      >>> sampled = dataset.sampleBy("key", fractions={0: 0.1, 1: 0.2}, seed=0)
+ |      >>> sampled.groupBy("key").count().orderBy("key").show()
+ |      +---+-----+
+ |      |key|count|
+ |      +---+-----+
+ |      |  0|    5|
+ |      |  1|    9|
+ |      +---+-----+
  |      
- |              * `append`: Append contents of this :class:`DataFrame` to existing data.
- |              * `overwrite`: Overwrite existing data.
- |              * `error`: Throw an exception if data already exists.
- |              * `ignore`: Silently ignore this operation if data already exists.
- |      
- |      .. versionadded:: 1.3
- |  
- |  saveAsParquetFile(self, path)
- |      Saves the contents as a Parquet file, preserving the schema.
- |      
- |              Files that are written out using this method can be read back in as
- |              a :class:`DataFrame` using :func:`SQLContext.parquetFile`.
- |      
- |              >>> import tempfile, shutil
- |              >>> parquetFile = tempfile.mkdtemp()
- |              >>> shutil.rmtree(parquetFile)
- |              >>> df.saveAsParquetFile(parquetFile)
- |              >>> df2 = sqlContext.parquetFile(parquetFile)
- |              >>> sorted(df2.collect()) == sorted(df.collect())
- |              True
- |      
- |      .. versionadded:: 1.3
- |  
- |  saveAsTable(self, tableName, source=None, mode='error', **options)
- |      Saves the contents of this :class:`DataFrame` to a data source as a table.
- |      
- |              The data source is specified by the ``source`` and a set of ``options``.
- |              If ``source`` is not specified, the default data source configured by
- |              ``spark.sql.sources.default`` will be used.
- |      
- |              Additionally, mode is used to specify the behavior of the saveAsTable operation when
- |              table already exists in the data source. There are four modes:
- |      
- |              * `append`: Append contents of this :class:`DataFrame` to existing data.
- |              * `overwrite`: Overwrite existing data.
- |              * `error`: Throw an exception if data already exists.
- |              * `ignore`: Silently ignore this operation if data already exists.
- |      
- |      .. versionadded:: 1.3
+ |      .. versionadded:: 1.5
  |  
  |  select(self, *cols)
  |      Projects a set of expressions and returns a new :class:`DataFrame`.
  |      
- |              :param cols: list of column names (string) or expressions (:class:`Column`).
- |                  If one of the column names is '*', that column is expanded to include all columns
- |                  in the current DataFrame.
+ |      :param cols: list of column names (string) or expressions (:class:`Column`).
+ |          If one of the column names is '*', that column is expanded to include all columns
+ |          in the current DataFrame.
  |      
- |              >>> df.select('*').collect()
- |              [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
- |              >>> df.select('name', 'age').collect()
- |              [Row(name=u'Alice', age=2), Row(name=u'Bob', age=5)]
- |              >>> df.select(df.name, (df.age + 10).alias('age')).collect()
- |              [Row(name=u'Alice', age=12), Row(name=u'Bob', age=15)]
+ |      >>> df.select('*').collect()
+ |      [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
+ |      >>> df.select('name', 'age').collect()
+ |      [Row(name=u'Alice', age=2), Row(name=u'Bob', age=5)]
+ |      >>> df.select(df.name, (df.age + 10).alias('age')).collect()
+ |      [Row(name=u'Alice', age=12), Row(name=u'Bob', age=15)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  selectExpr(self, *expr)
  |      Projects a set of SQL expressions and returns a new :class:`DataFrame`.
  |      
- |              This is a variant of :func:`select` that accepts SQL expressions.
+ |      This is a variant of :func:`select` that accepts SQL expressions.
  |      
- |              >>> df.selectExpr("age * 2", "abs(age)").collect()
- |              [Row((age * 2)=4, Abs(age)=2), Row((age * 2)=10, Abs(age)=5)]
+ |      >>> df.selectExpr("age * 2", "abs(age)").collect()
+ |      [Row((age * 2)=4, abs(age)=2), Row((age * 2)=10, abs(age)=5)]
  |      
  |      .. versionadded:: 1.3
  |  
- |  show(self, n=20)
+ |  show(self, n=20, truncate=True)
  |      Prints the first ``n`` rows to the console.
  |      
- |              >>> df
- |              DataFrame[age: int, name: string]
- |              >>> df.show()
- |              +---+-----+
- |              |age| name|
- |              +---+-----+
- |              |  2|Alice|
- |              |  5|  Bob|
- |              +---+-----+
+ |      :param n: Number of rows to show.
+ |      :param truncate: Whether truncate long strings and align cells right.
+ |      
+ |      >>> df
+ |      DataFrame[age: int, name: string]
+ |      >>> df.show()
+ |      +---+-----+
+ |      |age| name|
+ |      +---+-----+
+ |      |  2|Alice|
+ |      |  5|  Bob|
+ |      +---+-----+
  |      
  |      .. versionadded:: 1.3
  |  
  |  sort(self, *cols, **kwargs)
  |      Returns a new :class:`DataFrame` sorted by the specified column(s).
  |      
- |              :param cols: list of :class:`Column` or column names to sort by.
- |              :param ascending: boolean or list of boolean (default True).
- |                  Sort ascending vs. descending. Specify list for multiple sort orders.
- |                  If a list is specified, length of the list must equal length of the `cols`.
+ |      :param cols: list of :class:`Column` or column names to sort by.
+ |      :param ascending: boolean or list of boolean (default True).
+ |          Sort ascending vs. descending. Specify list for multiple sort orders.
+ |          If a list is specified, length of the list must equal length of the `cols`.
  |      
- |              >>> df.sort(df.age.desc()).collect()
- |              [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
- |              >>> df.sort("age", ascending=False).collect()
- |              [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
- |              >>> df.orderBy(df.age.desc()).collect()
- |              [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
- |              >>> from pyspark.sql.functions import *
- |              >>> df.sort(asc("age")).collect()
- |              [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
- |              >>> df.orderBy(desc("age"), "name").collect()
- |              [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
- |              >>> df.orderBy(["age", "name"], ascending=[0, 1]).collect()
- |              [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
+ |      >>> df.sort(df.age.desc()).collect()
+ |      [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
+ |      >>> df.sort("age", ascending=False).collect()
+ |      [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
+ |      >>> df.orderBy(df.age.desc()).collect()
+ |      [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
+ |      >>> from pyspark.sql.functions import *
+ |      >>> df.sort(asc("age")).collect()
+ |      [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
+ |      >>> df.orderBy(desc("age"), "name").collect()
+ |      [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
+ |      >>> df.orderBy(["age", "name"], ascending=[0, 1]).collect()
+ |      [Row(age=5, name=u'Bob'), Row(age=2, name=u'Alice')]
  |      
  |      .. versionadded:: 1.3
  |  
+ |  sortWithinPartitions(self, *cols, **kwargs)
+ |      Returns a new :class:`DataFrame` with each partition sorted by the specified column(s).
+ |      
+ |      :param cols: list of :class:`Column` or column names to sort by.
+ |      :param ascending: boolean or list of boolean (default True).
+ |          Sort ascending vs. descending. Specify list for multiple sort orders.
+ |          If a list is specified, length of the list must equal length of the `cols`.
+ |      
+ |      >>> df.sortWithinPartitions("age", ascending=False).show()
+ |      +---+-----+
+ |      |age| name|
+ |      +---+-----+
+ |      |  2|Alice|
+ |      |  5|  Bob|
+ |      +---+-----+
+ |      
+ |      .. versionadded:: 1.6
+ |  
  |  subtract(self, other)
  |      Return a new :class:`DataFrame` containing rows in this frame
- |              but not in another frame.
+ |      but not in another frame.
  |      
- |              This is equivalent to `EXCEPT` in SQL.
+ |      This is equivalent to `EXCEPT` in SQL.
  |      
  |      .. versionadded:: 1.3
  |  
  |  take(self, num)
  |      Returns the first ``num`` rows as a :class:`list` of :class:`Row`.
  |      
- |              >>> df.take(2)
- |              [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
+ |      >>> df.take(2)
+ |      [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
  |      
  |      .. versionadded:: 1.3
+ |  
+ |  toDF(self, *cols)
+ |      Returns a new class:`DataFrame` that with new specified column names
+ |      
+ |      :param cols: list of new column names (string)
+ |      
+ |      >>> df.toDF('f1', 'f2').collect()
+ |      [Row(f1=2, f2=u'Alice'), Row(f1=5, f2=u'Bob')]
  |  
  |  toJSON(self, use_unicode=True)
  |      Converts a :class:`DataFrame` into a :class:`RDD` of string.
  |      
- |              Each row is turned into a JSON document as one element in the returned RDD.
+ |      Each row is turned into a JSON document as one element in the returned RDD.
  |      
- |              >>> df.toJSON().first()
- |              u'{"age":2,"name":"Alice"}'
+ |      >>> df.toJSON().first()
+ |      u'{"age":2,"name":"Alice"}'
  |      
  |      .. versionadded:: 1.3
+ |  
+ |  toLocalIterator(self)
+ |      Returns an iterator that contains all of the rows in this :class:`DataFrame`.
+ |      The iterator will consume as much memory as the largest partition in this DataFrame.
+ |      
+ |      >>> list(df.toLocalIterator())
+ |      [Row(age=2, name=u'Alice'), Row(age=5, name=u'Bob')]
+ |      
+ |      .. versionadded:: 2.0
  |  
  |  toPandas(self)
  |      Returns the contents of this :class:`DataFrame` as Pandas ``pandas.DataFrame``.
  |      
- |              This is only available if Pandas is installed and available.
+ |      Note that this method should only be used if the resulting Pandas's DataFrame is expected
+ |      to be small, as all the data is loaded into the driver's memory.
  |      
- |              >>> df.toPandas()  # doctest: +SKIP
- |                 age   name
- |              0    2  Alice
- |              1    5    Bob
+ |      This is only available if Pandas is installed and available.
+ |      
+ |      >>> df.toPandas()  # doctest: +SKIP
+ |         age   name
+ |      0    2  Alice
+ |      1    5    Bob
  |      
  |      .. versionadded:: 1.3
+ |  
+ |  union(self, other)
+ |      Return a new :class:`DataFrame` containing union of rows in this
+ |      frame and another frame.
+ |      
+ |      This is equivalent to `UNION ALL` in SQL. To do a SQL-style set union
+ |      (that does deduplication of elements), use this function followed by a distinct.
+ |      
+ |      .. versionadded:: 2.0
  |  
  |  unionAll(self, other)
  |      Return a new :class:`DataFrame` containing union of rows in this
- |              frame and another frame.
+ |      frame and another frame.
  |      
- |              This is equivalent to `UNION ALL` in SQL.
+ |      .. note:: Deprecated in 2.0, use union instead.
  |      
  |      .. versionadded:: 1.3
  |  
- |  unpersist(self, blocking=True)
+ |  unpersist(self, blocking=False)
  |      Marks the :class:`DataFrame` as non-persistent, and remove all blocks for it from
- |              memory and disk.
+ |      memory and disk.
+ |      
+ |      .. note:: `blocking` default has changed to False to match Scala in 2.0.
  |      
  |      .. versionadded:: 1.3
  |  
  |  where = filter(self, condition)
+ |      :func:`where` is an alias for :func:`filter`.
+ |      
+ |      .. versionadded:: 1.3
  |  
  |  withColumn(self, colName, col)
- |      Returns a new :class:`DataFrame` by adding a column.
+ |      Returns a new :class:`DataFrame` by adding a column or replacing the
+ |      existing column that has the same name.
  |      
- |              :param colName: string, name of the new column.
- |              :param col: a :class:`Column` expression for the new column.
+ |      :param colName: string, name of the new column.
+ |      :param col: a :class:`Column` expression for the new column.
  |      
- |              >>> df.withColumn('age2', df.age + 2).collect()
- |              [Row(age=2, name=u'Alice', age2=4), Row(age=5, name=u'Bob', age2=7)]
+ |      >>> df.withColumn('age2', df.age + 2).collect()
+ |      [Row(age=2, name=u'Alice', age2=4), Row(age=5, name=u'Bob', age2=7)]
  |      
  |      .. versionadded:: 1.3
  |  
  |  withColumnRenamed(self, existing, new)
  |      Returns a new :class:`DataFrame` by renaming an existing column.
  |      
- |              :param existing: string, name of the existing column to rename.
- |              :param col: string, new name of the column.
+ |      :param existing: string, name of the existing column to rename.
+ |      :param col: string, new name of the column.
  |      
- |              >>> df.withColumnRenamed('age', 'age2').collect()
- |              [Row(age2=2, name=u'Alice'), Row(age2=5, name=u'Bob')]
+ |      >>> df.withColumnRenamed('age', 'age2').collect()
+ |      [Row(age2=2, name=u'Alice'), Row(age2=5, name=u'Bob')]
  |      
  |      .. versionadded:: 1.3
  |  
@@ -838,18 +965,30 @@ class DataFrame(__builtin__.object)
  |  columns
  |      Returns all column names as a list.
  |      
- |              >>> df.columns
- |              [u'age', u'name']
+ |      >>> df.columns
+ |      ['age', 'name']
  |      
  |      .. versionadded:: 1.3
  |  
  |  dtypes
  |      Returns all column names and their data types as a list.
  |      
- |              >>> df.dtypes
- |              [('age', 'int'), ('name', 'string')]
+ |      >>> df.dtypes
+ |      [('age', 'int'), ('name', 'string')]
  |      
  |      .. versionadded:: 1.3
+ |  
+ |  isStreaming
+ |      Returns true if this :class:`Dataset` contains one or more sources that continuously
+ |      return data as it arrives. A :class:`Dataset` that reads data from a streaming source
+ |      must be executed as a :class:`StreamingQuery` using the :func:`start` method in
+ |      :class:`DataStreamWriter`.  Methods that return a single answer, (e.g., :func:`count` or
+ |      :func:`collect`) will throw an :class:`AnalysisException` when there is a streaming
+ |      source present.
+ |      
+ |      .. note:: Experimental
+ |      
+ |      .. versionadded:: 2.0
  |  
  |  na
  |      Returns a :class:`DataFrameNaFunctions` for handling missing values.
@@ -864,8 +1003,8 @@ class DataFrame(__builtin__.object)
  |  schema
  |      Returns the schema of this :class:`DataFrame` as a :class:`types.StructType`.
  |      
- |              >>> df.schema
- |              StructType(List(StructField(age,IntegerType,true),StructField(name,StringType,true)))
+ |      >>> df.schema
+ |      StructType(List(StructField(age,IntegerType,true),StructField(name,StringType,true)))
  |      
  |      .. versionadded:: 1.3
  |  
@@ -875,14 +1014,13 @@ class DataFrame(__builtin__.object)
  |      .. versionadded:: 1.4
  |  
  |  write
- |              Interface for saving the content of the :class:`DataFrame` out
- |              into external storage.
+ |      Interface for saving the content of the non-streaming :class:`DataFrame` out into external
+ |      storage.
  |      
- |              :return :class:`DataFrameWriter`
- |      
- |              .. note:: Experimental
- |      
- |              >>> df.write
- |              <pyspark.sql.readwriter.DataFrameWriter object at ...>
+ |      :return: :class:`DataFrameWriter`
  |      
  |      .. versionadded:: 1.4
+ |  
+ |  writeStream
+ |      Interface for saving the content of the streaming :class:`DataFrame` out into external
+ |      storage.
